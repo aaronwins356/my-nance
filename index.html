@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css" />
+  </head>
+  <body class="hold-transition sidebar-mini" x-data>
+    <div class="wrapper">
+      <!-- Header -->
+      <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+              <i class="fas fa-bars"></i>
+            </a>
+          </li>
+          <li class="nav-item d-none d-sm-inline-block">
+            <a href="#" class="nav-link" x-text="i18next.t('ai_dashboard')"></a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Content Wrapper -->
+      <div class="content-wrapper">
+        <div class="content">
+          <div class="container-fluid mt-4" x-data="dashboard()">
+            <div class="row">
+              <!-- Analyze Card -->
+              <div class="col-md-4">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title" x-text="i18next.t('analyze_card.title')"></h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label">[[i18next.t('ticker_label')]]</label>
+                      <input type="text" class="form-control" x-model="ticker" :placeholder="i18next.t('ticker_placeholder')" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">[[i18next.t('risk_label')]]</label>
+                      <select class="form-select" x-model="risk">
+                        <option value="conservative" x-text="i18next.t('risk_levels.conservative')"></option>
+                        <option value="moderate" x-text="i18next.t('risk_levels.moderate')"></option>
+                        <option value="aggressive" x-text="i18next.t('risk_levels.aggressive')"></option>
+                      </select>
+                    </div>
+                    <button class="btn btn-primary" :disabled="loading" @click="analyze()">
+                      <span x-show="!loading" x-text="i18next.t('analyze')"></span>
+                      <span x-show="loading">
+                        <i class="fas fa-spinner fa-spin"></i> [[i18next.t('loading')]]
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Signal Card -->
+              <div class="col-md-4" x-show="signal">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title" x-text="i18next.t('signal_card.title')"></h3>
+                  </div>
+                  <div class="card-body">
+                    <span class="badge" :class="badgeClass" x-text="i18next.t(`signals.${signal}`)"></span>
+                    <p><strong x-text="confidence + '%' "></strong></p>
+                    <p x-text="summary"></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Portfolio Card -->
+              <div class="col-md-4" x-show="allocation">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title" x-text="i18next.t('portfolio_card.title')"></h3>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="portfolioChart" width="100%" height="100%"></canvas>
+                    <table class="table mt-3">
+                      <thead>
+                        <tr>
+                          <th x-text="i18next.t('asset')"></th>
+                          <th x-text="i18next.t('percentage')"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <template x-for="(value, key) in allocation">
+                          <tr x-show="key !== 'advice'">
+                            <td x-text="key"></td>
+                            <td x-text="(value * 100).toFixed(2) + '%' "></td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  </body>
+</html>
