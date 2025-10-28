@@ -1,0 +1,21 @@
+{
+  "name": "ai-dashboard-frontend",
+  "version": "1.0.0",
+  "description": "AI Dashboard frontend with Vite, Bootstrap 5, AdminLTE, Alpine.js, Chart.js, i18next",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.1",
+    "admin-lte": "^3.2.0",
+    "alpinejs": "^3.12.0",
+    "chart.js": "^4.3.0",
+    "i18next": "^23.0.0"
+  },
+  "devDependencies": {
+    "vite": "^4.2.0",
+    "sass": "^1.62.0"
+  }
+}
