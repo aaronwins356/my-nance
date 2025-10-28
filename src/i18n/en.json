@@ -1,0 +1,24 @@
+{
+  "ai_dashboard": "AI Dashboard",
+  "analyze_card": { "title": "Analyze" },
+  "ticker_label": "Ticker",
+  "ticker_placeholder": "Enter ticker symbol",
+  "risk_label": "Risk Level",
+  "risk_levels": {
+    "conservative": "Conservative",
+    "moderate": "Moderate",
+    "aggressive": "Aggressive"
+  },
+  "analyze": "Analyze",
+  "loading": "Loading...",
+  "signal_card": { "title": "Signal" },
+  "signals": {
+    "bullish": "Bullish",
+    "bearish": "Bearish",
+    "neutral": "Neutral"
+  },
+  "portfolio_card": { "title": "Portfolio Allocation" },
+  "asset": "Asset",
+  "percentage": "Percentage",
+  "error": "An error occurred. Please try again."
+}
