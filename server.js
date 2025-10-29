@@ -17,7 +17,7 @@ async function main() {
     // Development: use Vite dev server middleware
     const { createServer: createViteServer } = require('vite');
     const vite = await createViteServer({
-      root: path.resolve(__dirname, 'frontend'),
+      root: path.resolve(__dirname),
       server: { middlewareMode: 'html' }
     });
     app.use(vite.middlewares);
