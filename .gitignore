@@ -1,1 +1,47 @@
-# Your content goes here.
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Cache
+cache/
+*.cache
+
+# Model artifacts
+artifacts/*.pkl
+artifacts/*.json
+
+# Data files (keep structure, ignore large data)
+data/*.csv
+data/*.json
+!data/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
