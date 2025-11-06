@@ -647,7 +647,7 @@ def main():
     """Main application"""
     
     # Sidebar
-    st.sidebar.image("https://via.placeholder.com/200x100/FF4B4B/FFFFFF?text=FightIQ", use_container_width=True)
+    st.sidebar.image("https://via.placeholder.com/200x100/FF4B4B/FFFFFF?text=FightIQ", use_column_width=True)
     st.sidebar.title("Navigation")
     
     page = st.sidebar.radio(
