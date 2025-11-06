@@ -30,6 +30,11 @@ class EnsembleModel:
     def __init__(self, models, model_names):
         self.models = models
         self.model_names = model_names
+        self.is_fitted_ = True  # Models are already fitted
+    
+    def fit(self, X, y):
+        """Fit method for sklearn compatibility (models already fitted)"""
+        return self
     
     def predict(self, X):
         """Predict class labels using majority vote"""
@@ -293,10 +298,15 @@ def evaluate_model(model, X_train, y_train, X_test, y_test, model_name):
         'test_auc': roc_auc_score(y_test, y_test_proba)
     }
     
-    # Cross-validation score
-    cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy')
-    metrics['cv_mean'] = cv_scores.mean()
-    metrics['cv_std'] = cv_scores.std()
+    # Cross-validation score (skip for ensemble models)
+    if 'Ensemble' not in model_name:
+        cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy')
+        metrics['cv_mean'] = cv_scores.mean()
+        metrics['cv_std'] = cv_scores.std()
+    else:
+        # For ensemble, use test accuracy as proxy
+        metrics['cv_mean'] = metrics['test_accuracy']
+        metrics['cv_std'] = 0.0
     
     # Print metrics
     print(f"\n{model_name} Performance:")

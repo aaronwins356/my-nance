@@ -23,6 +23,8 @@ artifacts/*.json
 data/*.csv
 data/*.json
 !data/.gitkeep
+!data/fighter_styles.csv
+!data/fight_odds.csv
 
 # IDE
 .vscode/
