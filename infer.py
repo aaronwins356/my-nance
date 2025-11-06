@@ -64,6 +64,23 @@ def load_fighter_stats():
     
     return pd.read_csv(fighter_stats_file)
 
+def load_fighter_styles():
+    """
+    Load fighter style classifications
+    
+    Returns:
+        Dictionary mapping fighter name to style
+    """
+    styles_file = os.path.join(DATA_DIR, 'fighter_styles.csv')
+    
+    if not os.path.exists(styles_file):
+        print("Warning: Fighter styles not found")
+        return {}
+    
+    import pandas as pd
+    styles_df = pd.read_csv(styles_file)
+    return dict(zip(styles_df['fighter_name'], styles_df['primary_style']))
+
 def load_elo_ratings():
     """
     Load ELO ratings
@@ -98,7 +115,7 @@ def get_fighter_stats_dict(fighter_name, fighter_stats_df):
     
     return fighter_row.iloc[0].to_dict()
 
-def predict_fight(fighter1_name, fighter2_name, model=None, is_title_fight=False):
+def predict_fight(fighter1_name, fighter2_name, model=None, is_title_fight=False, odds=None):
     """
     Predict outcome of a fight
     
@@ -107,6 +124,7 @@ def predict_fight(fighter1_name, fighter2_name, model=None, is_title_fight=False
         fighter2_name: Name of second fighter
         model: Optional pre-loaded model
         is_title_fight: Whether this is a title fight
+        odds: Optional dict with 'fighter1_odds' and 'fighter2_odds' (American format)
     
     Returns:
         Dictionary with prediction results
@@ -118,6 +136,7 @@ def predict_fight(fighter1_name, fighter2_name, model=None, is_title_fight=False
     # Load data
     fighter_stats_df = load_fighter_stats()
     elo_ratings = load_elo_ratings()
+    fighter_styles = load_fighter_styles()
     feature_names = load_feature_names()
     
     # Get fighter stats
@@ -125,7 +144,12 @@ def predict_fight(fighter1_name, fighter2_name, model=None, is_title_fight=False
     fighter2_stats = get_fighter_stats_dict(fighter2_name, fighter_stats_df)
     
     # Prepare features
-    fight_features = prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings)
+    fight_features = prepare_single_fight(
+        fighter1_stats, fighter2_stats, 
+        elo_ratings=elo_ratings,
+        fighter_styles=fighter_styles,
+        odds=odds
+    )
     fight_features['is_title_fight'] = is_title_fight
     
     # Ensure all required features are present
@@ -156,7 +180,9 @@ def predict_fight(fighter1_name, fighter2_name, model=None, is_title_fight=False
         'confidence': float(confidence),
         'is_title_fight': is_title_fight,
         'fighter1_elo': elo_ratings.get(fighter1_name, 1500),
-        'fighter2_elo': elo_ratings.get(fighter2_name, 1500)
+        'fighter2_elo': elo_ratings.get(fighter2_name, 1500),
+        'fighter1_style': fighter_styles.get(fighter1_name, 'Unknown'),
+        'fighter2_style': fighter_styles.get(fighter2_name, 'Unknown')
     }
     
     return result
@@ -262,6 +288,10 @@ def print_prediction(prediction_result):
     
     if prediction_result.get('is_title_fight'):
         print("(Title Fight)")
+    
+    print(f"\nFighter Styles:")
+    print(f"  {prediction_result['fighter1']}: {prediction_result.get('fighter1_style', 'Unknown')}")
+    print(f"  {prediction_result['fighter2']}: {prediction_result.get('fighter2_style', 'Unknown')}")
     
     print(f"\nELO Ratings:")
     print(f"  {prediction_result['fighter1']}: {prediction_result['fighter1_elo']:.0f}")

@@ -98,7 +98,7 @@ def select_features(df, feature_list=None):
         X (features), y (target), feature_names
     """
     # Exclude metadata and target columns
-    exclude_cols = ['event_date', 'fighter1_name', 'fighter2_name', 'fighter1_won']
+    exclude_cols = ['event_date', 'fighter1_name', 'fighter2_name', 'fighter1_won', 'style_matchup']
     
     if feature_list is None:
         # Auto-select numerical features
@@ -171,7 +171,7 @@ def load_feature_names():
     with open(feature_names_file, 'r') as f:
         return json.load(f)
 
-def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None):
+def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None, fighter_styles=None, odds=None):
     """
     Prepare features for a single fight prediction
     
@@ -179,6 +179,8 @@ def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None):
         fighter1_stats: Dict with fighter 1 statistics
         fighter2_stats: Dict with fighter 2 statistics
         elo_ratings: Optional dict with ELO ratings
+        fighter_styles: Optional dict mapping fighter names to styles
+        odds: Optional dict with 'fighter1_odds' and 'fighter2_odds' (American format)
     
     Returns:
         pandas DataFrame with single row of features
@@ -235,6 +237,68 @@ def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None):
         features['f1_elo'] = elo_ratings.get(fighter1_name, 1500)
         features['f2_elo'] = elo_ratings.get(fighter2_name, 1500)
         features['elo_diff'] = features['f1_elo'] - features['f2_elo']
+    
+    # Add style features if available
+    all_styles = ['Striker', 'Wrestler', 'BJJ', 'Well-Rounded', 'Boxer', 'Unknown']
+    if fighter_styles:
+        fighter1_name = fighter1_stats.get('name')
+        fighter2_name = fighter2_stats.get('name')
+        f1_style = fighter_styles.get(fighter1_name, 'Unknown')
+        f2_style = fighter_styles.get(fighter2_name, 'Unknown')
+        
+        # One-hot encode fighter 1 style
+        for style in all_styles:
+            features[f'f1_style_{style.lower()}'] = 1 if f1_style == style else 0
+        
+        # One-hot encode fighter 2 style
+        for style in all_styles:
+            features[f'f2_style_{style.lower()}'] = 1 if f2_style == style else 0
+        
+        # Add style matchup features
+        common_matchups = [
+            'Striker_vs_Wrestler', 'Wrestler_vs_Striker',
+            'Striker_vs_BJJ', 'BJJ_vs_Striker',
+            'Wrestler_vs_BJJ', 'BJJ_vs_Wrestler',
+            'Striker_vs_Striker', 'Wrestler_vs_Wrestler', 'BJJ_vs_BJJ'
+        ]
+        style_matchup = f'{f1_style}_vs_{f2_style}'
+        for matchup in common_matchups:
+            features[f'matchup_{matchup.lower()}'] = 1 if style_matchup == matchup else 0
+    else:
+        # Default style features to unknown
+        for style in all_styles:
+            features[f'f1_style_{style.lower()}'] = 1 if style == 'Unknown' else 0
+            features[f'f2_style_{style.lower()}'] = 1 if style == 'Unknown' else 0
+        
+        common_matchups = [
+            'Striker_vs_Wrestler', 'Wrestler_vs_Striker',
+            'Striker_vs_BJJ', 'BJJ_vs_Striker',
+            'Wrestler_vs_BJJ', 'BJJ_vs_Wrestler',
+            'Striker_vs_Striker', 'Wrestler_vs_Wrestler', 'BJJ_vs_BJJ'
+        ]
+        for matchup in common_matchups:
+            features[f'matchup_{matchup.lower()}'] = 0
+    
+    # Add odds features if available
+    if odds and 'fighter1_odds' in odds and 'fighter2_odds' in odds:
+        # Convert American odds to implied probability
+        def american_to_prob(odds_val):
+            if odds_val < 0:
+                return (-odds_val) / (-odds_val + 100)
+            else:
+                return 100 / (odds_val + 100)
+        
+        f1_prob = american_to_prob(odds['fighter1_odds'])
+        f2_prob = american_to_prob(odds['fighter2_odds'])
+        total = f1_prob + f2_prob
+        features['f1_odds_implied_prob'] = f1_prob / total
+        features['f2_odds_implied_prob'] = f2_prob / total
+        features['odds_diff'] = features['f1_odds_implied_prob'] - features['f2_odds_implied_prob']
+    else:
+        # Default to 50-50 if no odds
+        features['f1_odds_implied_prob'] = 0.5
+        features['f2_odds_implied_prob'] = 0.5
+        features['odds_diff'] = 0.0
     
     # Create DataFrame
     df = pd.DataFrame([features])
