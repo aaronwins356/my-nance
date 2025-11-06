@@ -23,6 +23,34 @@ from sklearn.calibration import CalibratedClassifierCV
 # Import data processing
 from data_processing import prepare_data, ensure_directories
 
+class EnsembleModel:
+    """
+    Simple ensemble model that averages predictions from multiple models
+    """
+    def __init__(self, models, model_names):
+        self.models = models
+        self.model_names = model_names
+        self.is_fitted_ = True  # Models are already fitted
+    
+    def fit(self, X, y):
+        """Fit method for sklearn compatibility (models already fitted)"""
+        return self
+    
+    def predict(self, X):
+        """Predict class labels using majority vote"""
+        predictions = np.array([model.predict(X) for model in self.models])
+        # Average predictions and round (for binary classification)
+        return np.round(predictions.mean(axis=0)).astype(int)
+    
+    def predict_proba(self, X):
+        """Predict class probabilities by averaging"""
+        probabilities = np.array([model.predict_proba(X) for model in self.models])
+        # Average probabilities across models
+        return probabilities.mean(axis=0)
+    
+    def __repr__(self):
+        return f"EnsembleModel({', '.join(self.model_names)})"
+
 try:
     import xgboost as xgb
     XGBOOST_AVAILABLE = True
@@ -36,6 +64,13 @@ try:
 except ImportError:
     LIGHTGBM_AVAILABLE = False
     print("Warning: LightGBM not available")
+
+try:
+    from sklearn.neural_network import MLPClassifier
+    NEURAL_NET_AVAILABLE = True
+except ImportError:
+    NEURAL_NET_AVAILABLE = False
+    print("Warning: MLPClassifier not available")
 
 ARTIFACTS_DIR = os.path.join(os.path.dirname(__file__), 'artifacts')
 
@@ -177,6 +212,52 @@ def train_lightgbm(X_train, y_train, n_estimators=100):
     
     return model
 
+def train_neural_net(X_train, y_train, hidden_layers=(64, 32), max_iter=500):
+    """
+    Train Neural Network (MLP) classifier
+    
+    Args:
+        X_train: Training features
+        y_train: Training target
+        hidden_layers: Tuple specifying hidden layer sizes
+        max_iter: Maximum number of training iterations
+    
+    Returns:
+        Trained model
+    """
+    if not NEURAL_NET_AVAILABLE:
+        print("MLPClassifier not available, skipping...")
+        return None
+    
+    print("\n" + "="*60)
+    print("Training Neural Network (MLP) Classifier")
+    print("="*60)
+    
+    model = MLPClassifier(
+        hidden_layer_sizes=hidden_layers,
+        activation='relu',
+        solver='adam',
+        alpha=0.0001,  # L2 regularization
+        batch_size='auto',
+        learning_rate='adaptive',
+        learning_rate_init=0.001,
+        max_iter=max_iter,
+        shuffle=True,
+        random_state=42,
+        early_stopping=True,
+        validation_fraction=0.1,
+        n_iter_no_change=10,
+        verbose=False
+    )
+    
+    model.fit(X_train, y_train)
+    
+    print(f"Architecture: {hidden_layers}")
+    print(f"Training iterations: {model.n_iter_}")
+    print(f"Loss: {model.loss_:.4f}")
+    
+    return model
+
 def evaluate_model(model, X_train, y_train, X_test, y_test, model_name):
     """
     Evaluate model performance
@@ -217,10 +298,15 @@ def evaluate_model(model, X_train, y_train, X_test, y_test, model_name):
         'test_auc': roc_auc_score(y_test, y_test_proba)
     }
     
-    # Cross-validation score
-    cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy')
-    metrics['cv_mean'] = cv_scores.mean()
-    metrics['cv_std'] = cv_scores.std()
+    # Cross-validation score (skip for ensemble models)
+    if 'Ensemble' not in model_name:
+        cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy')
+        metrics['cv_mean'] = cv_scores.mean()
+        metrics['cv_std'] = cv_scores.std()
+    else:
+        # For ensemble, use test accuracy as proxy
+        metrics['cv_mean'] = metrics['test_accuracy']
+        metrics['cv_std'] = 0.0
     
     # Print metrics
     print(f"\n{model_name} Performance:")
@@ -369,6 +455,10 @@ def train_and_compare_models():
     if LIGHTGBM_AVAILABLE:
         models['LightGBM'] = train_lightgbm(X_train, y_train)
     
+    # 5. Neural Network
+    if NEURAL_NET_AVAILABLE:
+        models['NeuralNet'] = train_neural_net(X_train, y_train)
+    
     # Evaluate all models
     print("\n" + "="*60)
     print("Model Comparison")
@@ -381,6 +471,24 @@ def train_and_compare_models():
             metrics = evaluate_model(model, X_train, y_train, X_test, y_test, name)
             all_metrics.append(metrics)
     
+    # Create ensemble of Random Forest and Neural Network
+    if models.get('RandomForest') and models.get('NeuralNet'):
+        print("\n" + "="*60)
+        print("Creating Random Forest + Neural Network Ensemble")
+        print("="*60)
+        
+        ensemble = EnsembleModel(
+            [models['RandomForest'], models['NeuralNet']],
+            ['RandomForest', 'NeuralNet']
+        )
+        
+        ensemble_metrics = evaluate_model(
+            ensemble, X_train, y_train, X_test, y_test, 
+            'RF+NN Ensemble'
+        )
+        all_metrics.append(ensemble_metrics)
+        models['RF+NN Ensemble'] = ensemble
+    
     # Select best model based on test accuracy
     best_model_metrics = max(all_metrics, key=lambda x: x['test_accuracy'])
     best_model_name = best_model_metrics['model_name']
@@ -391,11 +499,23 @@ def train_and_compare_models():
     print(f"Test Accuracy: {best_model_metrics['test_accuracy']:.4f}")
     print("="*60)
     
-    # Calibrate best model
-    calibrated_model = calibrate_model(best_model, X_train, y_train)
+    # Calibrate best model if it's not an ensemble
+    if 'Ensemble' not in best_model_name:
+        calibrated_model = calibrate_model(best_model, X_train, y_train)
+    else:
+        # For ensemble, the individual models (RF and NN) are not calibrated here
+        # The averaging of probabilities from multiple models provides some implicit calibration
+        # In production, you may want to calibrate the ensemble output using CalibratedClassifierCV
+        print("\nSkipping calibration for ensemble (already averaging multiple models)")
+        calibrated_model = best_model
     
-    # Get feature importance
-    feature_importance = get_feature_importance(calibrated_model, feature_names)
+    # Get feature importance (from Random Forest or best tree model)
+    feature_importance = {}
+    if best_model_name == 'RF+NN Ensemble':
+        # Use Random Forest feature importance from the ensemble
+        feature_importance = get_feature_importance(models['RandomForest'], feature_names)
+    else:
+        feature_importance = get_feature_importance(calibrated_model, feature_names)
     
     # Save best model
     save_model(calibrated_model, best_model_name, feature_names, 

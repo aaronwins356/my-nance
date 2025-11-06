@@ -11,11 +11,37 @@ from datetime import datetime
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from utils import american_odds_to_probability
+
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
 
 def ensure_directories():
     """Ensure data directory exists"""
     os.makedirs(DATA_DIR, exist_ok=True)
+
+def load_fighter_styles():
+    """Load fighter style classifications"""
+    styles_file = os.path.join(DATA_DIR, 'fighter_styles.csv')
+    
+    if os.path.exists(styles_file):
+        styles_df = pd.read_csv(styles_file)
+        print(f"Loaded {len(styles_df)} fighter styles")
+        return dict(zip(styles_df['fighter_name'], styles_df['primary_style']))
+    else:
+        print("Warning: Fighter styles not found, will use default 'Unknown' style")
+        return {}
+
+def load_fight_odds():
+    """Load historical betting odds"""
+    odds_file = os.path.join(DATA_DIR, 'fight_odds.csv')
+    
+    if os.path.exists(odds_file):
+        odds_df = pd.read_csv(odds_file)
+        print(f"Loaded odds for {len(odds_df)} fights")
+        return odds_df
+    else:
+        print("Warning: Fight odds not found, odds features will be set to default")
+        return pd.DataFrame()
 
 def load_data():
     """Load all scraped data"""
@@ -38,20 +64,28 @@ def load_data():
     print(f"Loaded {len(fighter_stats)} fighter profiles")
     print(f"Loaded {len(fight_results)} fight results")
     
-    return fighter_stats, fight_results
+    # Load additional data
+    fighter_styles = load_fighter_styles()
+    fight_odds = load_fight_odds()
+    
+    return fighter_stats, fight_results, fighter_styles, fight_odds
 
-def build_training_dataset(fighter_stats, fight_results):
+def build_training_dataset(fighter_stats, fight_results, fighter_styles, fight_odds):
     """
-    Build training dataset with features from both fighters
+    Build training dataset with features from both fighters including styles and odds
     """
     print("Building training dataset...")
     
     training_data = []
     
+    # Available styles for one-hot encoding
+    all_styles = ['Striker', 'Wrestler', 'BJJ', 'Well-Rounded', 'Boxer', 'Unknown']
+    
     for idx, fight in fight_results.iterrows():
         fighter1_name = fight['fighter1']
         fighter2_name = fight['fighter2']
         winner = fight['winner']
+        event_date = fight['event_date']
         
         # Get stats for both fighters
         f1_stats = fighter_stats[fighter_stats['name'] == fighter1_name]
@@ -63,10 +97,35 @@ def build_training_dataset(fighter_stats, fight_results):
         f1 = f1_stats.iloc[0]
         f2 = f2_stats.iloc[0]
         
+        # Get fighter styles
+        f1_style = fighter_styles.get(fighter1_name, 'Unknown')
+        f2_style = fighter_styles.get(fighter2_name, 'Unknown')
+        
+        # Get odds for this fight
+        odds_row = fight_odds[
+            (fight_odds['fighter1'] == fighter1_name) & 
+            (fight_odds['fighter2'] == fighter2_name) &
+            (fight_odds['event_date'] == event_date)
+        ]
+        
+        if not odds_row.empty and odds_row.iloc[0]['odds_type'] == 'american':
+            f1_odds = odds_row.iloc[0]['fighter1_odds']
+            f2_odds = odds_row.iloc[0]['fighter2_odds']
+            f1_implied_prob = american_odds_to_probability(f1_odds)
+            f2_implied_prob = american_odds_to_probability(f2_odds)
+            # Normalize to sum to 1
+            total_prob = f1_implied_prob + f2_implied_prob
+            f1_implied_prob = f1_implied_prob / total_prob
+            f2_implied_prob = f2_implied_prob / total_prob
+        else:
+            # Default to 50-50 if no odds available
+            f1_implied_prob = 0.5
+            f2_implied_prob = 0.5
+        
         # Create feature set
         features = {
             # Fight metadata
-            'event_date': fight['event_date'],
+            'event_date': event_date,
             'fighter1_name': fighter1_name,
             'fighter2_name': fighter2_name,
             'is_title_fight': fight['is_title_fight'],
@@ -114,9 +173,34 @@ def build_training_dataset(fighter_stats, fight_results):
             'striking_diff': f1['sig_strikes_per_min'] - f2['sig_strikes_per_min'],
             'defense_diff': f1['striking_defense_pct'] - f2['striking_defense_pct'],
             
+            # Betting odds features
+            'f1_odds_implied_prob': f1_implied_prob,
+            'f2_odds_implied_prob': f2_implied_prob,
+            'odds_diff': f1_implied_prob - f2_implied_prob,
+            
             # Target variable
             'fighter1_won': 1 if winner == fighter1_name else 0
         }
+        
+        # Add style one-hot encoding for fighter 1
+        for style in all_styles:
+            features[f'f1_style_{style.lower()}'] = 1 if f1_style == style else 0
+        
+        # Add style one-hot encoding for fighter 2
+        for style in all_styles:
+            features[f'f2_style_{style.lower()}'] = 1 if f2_style == style else 0
+        
+        # Add style matchup features
+        features['style_matchup'] = f'{f1_style}_vs_{f2_style}'
+        # One-hot encode common matchups
+        common_matchups = [
+            'Striker_vs_Wrestler', 'Wrestler_vs_Striker',
+            'Striker_vs_BJJ', 'BJJ_vs_Striker',
+            'Wrestler_vs_BJJ', 'BJJ_vs_Wrestler',
+            'Striker_vs_Striker', 'Wrestler_vs_Wrestler', 'BJJ_vs_BJJ'
+        ]
+        for matchup in common_matchups:
+            features[f'matchup_{matchup.lower()}'] = 1 if features['style_matchup'] == matchup else 0
         
         training_data.append(features)
     
@@ -124,6 +208,8 @@ def build_training_dataset(fighter_stats, fight_results):
     
     print(f"Built training dataset with {len(df)} samples")
     print(f"Fighter 1 win rate: {df['fighter1_won'].mean():.2%}")
+    print(f"Columns with style features: {len([c for c in df.columns if 'style' in c])}")
+    print(f"Columns with odds features: {len([c for c in df.columns if 'odds' in c])}")
     
     return df
 
@@ -174,10 +260,10 @@ def build_pipeline():
     ensure_directories()
     
     # Load data
-    fighter_stats, fight_results = load_data()
+    fighter_stats, fight_results, fighter_styles, fight_odds = load_data()
     
     # Build training dataset
-    training_df = build_training_dataset(fighter_stats, fight_results)
+    training_df = build_training_dataset(fighter_stats, fight_results, fighter_styles, fight_odds)
     
     # Save dataset
     output_file = save_dataset(training_df)
