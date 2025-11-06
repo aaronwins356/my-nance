@@ -13,9 +13,10 @@ import json
 # Import project modules
 from infer import (
     load_model, load_fighter_stats, load_elo_ratings, 
-    predict_fight, explain_prediction_simple
+    predict_fight, explain_prediction_simple, load_fighter_styles
 )
 from data_processing import load_feature_names
+from fight_history import load_fight_history, get_fighter_history, format_fight_duration
 
 # Page config
 st.set_page_config(
@@ -88,6 +89,24 @@ def load_elo_ratings_cached():
     except Exception as e:
         st.warning(f"Error loading ELO ratings: {e}")
         return {}
+
+@st.cache_data
+def load_fighter_styles_cached():
+    """Load fighter styles with caching"""
+    try:
+        return load_fighter_styles()
+    except Exception as e:
+        st.warning(f"Error loading fighter styles: {e}")
+        return {}
+
+@st.cache_data
+def load_fight_history_cached():
+    """Load fight history with caching"""
+    try:
+        return load_fight_history()
+    except Exception as e:
+        st.warning(f"Error loading fight history: {e}")
+        return pd.DataFrame()
 
 @st.cache_data
 def load_model_metadata_cached():
@@ -192,11 +211,13 @@ def home_page():
                 st.write(f"**Test F1 Score:** {metrics.get('test_f1', 0):.4f}")
 
 def fighter_profiles_page():
-    """Fighter profiles page"""
+    """Fighter profiles page with enhanced fight history"""
     st.markdown('<div class="main-header">👤 Fighter Profiles</div>', unsafe_allow_html=True)
     
     fighter_stats = load_fighter_stats_cached()
     elo_ratings = load_elo_ratings_cached()
+    fighter_styles = load_fighter_styles_cached()
+    fight_history = load_fight_history_cached()
     
     if fighter_stats.empty:
         st.error("No fighter data available. Please run the data pipeline first.")
@@ -212,7 +233,7 @@ def fighter_profiles_page():
         st.markdown("---")
         
         # Fighter header
-        col1, col2, col3 = st.columns([2, 1, 1])
+        col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
         
         with col1:
             st.markdown(f'<div class="sub-header">{selected_fighter}</div>', unsafe_allow_html=True)
@@ -226,6 +247,11 @@ def fighter_profiles_page():
         with col3:
             elo_rating = elo_ratings.get(selected_fighter, 1500)
             st.metric("ELO Rating", f"{elo_rating:.0f}")
+        
+        with col4:
+            # Display fighting style
+            fighting_style = fighter_styles.get(selected_fighter, 'Unknown')
+            st.metric("Fighting Style", fighting_style)
         
         st.markdown("---")
         
@@ -253,6 +279,28 @@ def fighter_profiles_page():
             st.write(f"Sig. Strikes/Min: {fighter_data['sig_strikes_per_min']:.2f}")
             st.write(f"Takedown Avg: {fighter_data['takedown_avg_per_15min']:.2f}")
             st.write(f"Striking Accuracy: {fighter_data['striking_accuracy_pct']:.0f}%")
+        
+        # Fighting Style Description
+        st.markdown("---")
+        st.markdown("**Fighting Style Analysis** 🥋")
+        
+        style_descriptions = {
+            'Boxer': '🥊 Striker specializing in hands, head movement, and precise punching',
+            'Kickboxer': '🦵 Striker using full-body striking with punches and kicks',
+            'Muay Thai': '🇹🇭 Striker emphasizing elbows, knees, and clinch work',
+            'Karate': '🥋 Striker with movement, timing, and unorthodox techniques',
+            'Taekwondo': '🥋 Striker focusing on dynamic kicks and agility',
+            'Wrestler': '🤼 Grappler controlling with takedowns and ground dominance',
+            'BJJ': '🟦 Grappler hunting for submissions from various positions',
+            'Judoka': '🥋 Grappler using throws, trips, and positional control',
+            'Sambo': '🇷🇺 Grappler combining throws, leg locks, and ground control',
+            'Wrestle-Boxer': '🥊🤼 Hybrid blending wrestling control with boxing strikes',
+            'Striker-Grappler': '⚔️ Hybrid with balanced striking and grappling skills',
+            'All-Rounder': '🌟 Hybrid with elite-level skills in all areas'
+        }
+        
+        style_desc = style_descriptions.get(fighting_style, 'Versatile mixed martial artist')
+        st.info(style_desc)
         
         # Visualization
         st.markdown("---")
@@ -286,6 +334,59 @@ def fighter_profiles_page():
         )
         
         st.plotly_chart(fig, use_container_width=True)
+        
+        # Complete Fight History Section
+        st.markdown("---")
+        st.markdown("**Complete Fight History** 📋")
+        
+        # Get fighter's complete history
+        fighter_history = get_fighter_history(selected_fighter, fight_history)
+        
+        if not fighter_history.empty:
+            # Format the display data
+            display_history = fighter_history.copy()
+            
+            # Format date
+            if 'event_date' in display_history.columns:
+                display_history['Date'] = pd.to_datetime(display_history['event_date']).dt.strftime('%Y-%m-%d')
+            else:
+                display_history['Date'] = 'N/A'
+            
+            # Create display columns
+            display_columns = {
+                'Date': display_history.get('Date', 'N/A'),
+                'Opponent': display_history.get('opponent_name', 'N/A'),
+                'Event': display_history.get('event_name', 'N/A'),
+                'Result': display_history.get('result', 'N/A'),
+                'Method': display_history.get('win_method', 'N/A'),
+                'Round': display_history.get('round_number', 'N/A'),
+                'Time': display_history['fight_duration_seconds'].apply(format_fight_duration) if 'fight_duration_seconds' in display_history.columns else 'N/A',
+                'Sig. Strikes': display_history.get('sig_strikes_landed', 'N/A').astype(str) + ' / ' + display_history.get('sig_strikes_received', 'N/A').astype(str) if 'sig_strikes_landed' in display_history.columns else 'N/A',
+                'Finish Technique': display_history.get('fight_ending_technique', 'N/A')
+            }
+            
+            display_df = pd.DataFrame(display_columns)
+            
+            # Apply styling based on result
+            def highlight_result(row):
+                if row['Result'] == 'Win':
+                    return ['background-color: #d4edda'] * len(row)
+                elif row['Result'] == 'Loss':
+                    return ['background-color: #f8d7da'] * len(row)
+                else:
+                    return [''] * len(row)
+            
+            st.dataframe(
+                display_df.style.apply(highlight_result, axis=1),
+                use_container_width=True,
+                height=400
+            )
+            
+            st.caption(f"Showing {len(display_df)} fights from {selected_fighter}'s professional career")
+        else:
+            st.warning(f"No detailed fight history available for {selected_fighter}. Basic statistics are shown above.")
+            st.info("Fight history is currently being expanded. Check back soon for complete career records.")
+
 
 def rankings_page():
     """Rankings page"""

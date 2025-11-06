@@ -172,6 +172,23 @@ def load_feature_names():
     with open(feature_names_file, 'r') as f:
         return json.load(f)
 
+def get_style_category(fighter_style: str, style_categories: dict) -> str:
+    """
+    Determine the category (Striker, Grappler, Hybrid) for a fighter's detailed style
+    
+    Args:
+        fighter_style: Detailed fighting style (e.g., 'Boxer', 'Wrestler')
+        style_categories: Dictionary mapping categories to lists of styles
+    
+    Returns:
+        Category name ('Striker', 'Grappler', 'Hybrid', or 'Unknown')
+    """
+    for category, styles in style_categories.items():
+        if fighter_style in styles:
+            return category
+    return 'Unknown'
+
+
 def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None, fighter_styles=None, odds=None):
     """
     Prepare features for a single fight prediction
@@ -240,44 +257,62 @@ def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None, fight
         features['elo_diff'] = features['f1_elo'] - features['f2_elo']
     
     # Add style features if available
-    all_styles = ['Striker', 'Wrestler', 'BJJ', 'Well-Rounded', 'Boxer', 'Unknown']
+    # Detailed style categories based on fighting specialization
+    detailed_styles = [
+        'Boxer', 'Kickboxer', 'Muay Thai', 'Karate', 'Taekwondo',  # Strikers
+        'Wrestler', 'BJJ', 'Judoka', 'Sambo',  # Grapplers
+        'Wrestle-Boxer', 'Striker-Grappler', 'All-Rounder',  # Hybrids
+        'Unknown'
+    ]
+    
+    # Style categories for matchup analysis
+    style_categories = {
+        'Striker': ['Boxer', 'Kickboxer', 'Muay Thai', 'Karate', 'Taekwondo'],
+        'Grappler': ['Wrestler', 'BJJ', 'Judoka', 'Sambo'],
+        'Hybrid': ['Wrestle-Boxer', 'Striker-Grappler', 'All-Rounder']
+    }
+    
     if fighter_styles:
         fighter1_name = fighter1_stats.get('name')
         fighter2_name = fighter2_stats.get('name')
         f1_style = fighter_styles.get(fighter1_name, 'Unknown')
         f2_style = fighter_styles.get(fighter2_name, 'Unknown')
         
-        # One-hot encode fighter 1 style
-        for style in all_styles:
-            features[f'f1_style_{style.lower()}'] = 1 if f1_style == style else 0
+        # One-hot encode fighter 1 detailed style
+        for style in detailed_styles:
+            features[f'f1_style_{style.lower().replace("-", "_").replace(" ", "_")}'] = 1 if f1_style == style else 0
         
-        # One-hot encode fighter 2 style
-        for style in all_styles:
-            features[f'f2_style_{style.lower()}'] = 1 if f2_style == style else 0
+        # One-hot encode fighter 2 detailed style
+        for style in detailed_styles:
+            features[f'f2_style_{style.lower().replace("-", "_").replace(" ", "_")}'] = 1 if f2_style == style else 0
         
-        # Add style matchup features
-        common_matchups = [
-            'Striker_vs_Wrestler', 'Wrestler_vs_Striker',
-            'Striker_vs_BJJ', 'BJJ_vs_Striker',
-            'Wrestler_vs_BJJ', 'BJJ_vs_Wrestler',
-            'Striker_vs_Striker', 'Wrestler_vs_Wrestler', 'BJJ_vs_BJJ'
+        # Determine style category for each fighter using helper function
+        f1_category = get_style_category(f1_style, style_categories)
+        f2_category = get_style_category(f2_style, style_categories)
+        
+        # Add category-level matchup features
+        category_matchups = [
+            'Striker_vs_Grappler', 'Grappler_vs_Striker',
+            'Striker_vs_Hybrid', 'Hybrid_vs_Striker',
+            'Grappler_vs_Hybrid', 'Hybrid_vs_Grappler',
+            'Striker_vs_Striker', 'Grappler_vs_Grappler', 'Hybrid_vs_Hybrid'
         ]
-        style_matchup = f'{f1_style}_vs_{f2_style}'
-        for matchup in common_matchups:
-            features[f'matchup_{matchup.lower()}'] = 1 if style_matchup == matchup else 0
+        category_matchup = f'{f1_category}_vs_{f2_category}'
+        for matchup in category_matchups:
+            features[f'matchup_{matchup.lower()}'] = 1 if category_matchup == matchup else 0
     else:
         # Default style features to unknown
-        for style in all_styles:
-            features[f'f1_style_{style.lower()}'] = 1 if style == 'Unknown' else 0
-            features[f'f2_style_{style.lower()}'] = 1 if style == 'Unknown' else 0
+        for style in detailed_styles:
+            features[f'f1_style_{style.lower().replace("-", "_").replace(" ", "_")}'] = 1 if style == 'Unknown' else 0
+            features[f'f2_style_{style.lower().replace("-", "_").replace(" ", "_")}'] = 1 if style == 'Unknown' else 0
         
-        common_matchups = [
-            'Striker_vs_Wrestler', 'Wrestler_vs_Striker',
-            'Striker_vs_BJJ', 'BJJ_vs_Striker',
-            'Wrestler_vs_BJJ', 'BJJ_vs_Wrestler',
-            'Striker_vs_Striker', 'Wrestler_vs_Wrestler', 'BJJ_vs_BJJ'
+        category_matchups = [
+            'Striker_vs_Grappler', 'Grappler_vs_Striker',
+            'Striker_vs_Hybrid', 'Hybrid_vs_Striker',
+            'Grappler_vs_Hybrid', 'Hybrid_vs_Grappler',
+            'Striker_vs_Striker', 'Grappler_vs_Grappler', 'Hybrid_vs_Hybrid'
         ]
-        for matchup in common_matchups:
+        for matchup in category_matchups:
             features[f'matchup_{matchup.lower()}'] = 0
     
     # Add odds features if available

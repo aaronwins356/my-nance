@@ -23,6 +23,29 @@ def generate_fighter_stats():
         wins = np.random.randint(8, 25)
         losses = np.random.randint(0, 8)
         
+        # Determine weight class based on weight
+        weight = np.random.randint(135, 265)
+        if weight < 145:
+            weight_class = "Bantamweight"
+        elif weight < 155:
+            weight_class = "Featherweight"
+        elif weight < 170:
+            weight_class = "Lightweight"
+        elif weight < 185:
+            weight_class = "Welterweight"
+        elif weight < 205:
+            weight_class = "Middleweight"
+        elif weight < 265:
+            weight_class = "Light Heavyweight"
+        else:
+            weight_class = "Heavyweight"
+        
+        # Assign ranking (some fighters unranked)
+        rank = np.random.choice(
+            ['C', '#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', '#10', '#11', '#12', '#13', '#14', '#15', 'NR'],
+            p=[0.01, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.24]
+        )
+        
         fighter = {
             'name': name,
             'wins': wins,
@@ -34,7 +57,9 @@ def generate_fighter_stats():
             'height': np.random.randint(68, 78),
             'reach': np.random.randint(70, 82),
             'age': np.random.randint(24, 38),
-            'weight': np.random.randint(135, 265),
+            'weight': weight,
+            'weight_class': weight_class,
+            'rank': rank,
             'sig_strikes_per_min': round(np.random.uniform(2.5, 6.5), 2),
             'sig_strikes_absorbed_per_min': round(np.random.uniform(2.0, 5.0), 2),
             'takedown_avg_per_15min': round(np.random.uniform(0.5, 4.5), 2),

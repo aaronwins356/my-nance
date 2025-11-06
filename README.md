@@ -6,10 +6,15 @@ An advanced machine learning system for predicting Mixed Martial Arts (MMA) figh
 
 ### 🎯 Core Capabilities
 - **AI-Powered Predictions**: Calibrated win probability predictions using ensemble of Random Forest and Neural Network models
-- **Fighter Style Analysis**: Incorporates fighter specialization (Striker, Wrestler, BJJ, etc.) and style matchup dynamics
+- **Enhanced Fighter Profiles**: Detailed fight history with complete career records including event names, fight-ending techniques, round-by-round statistics
+- **Advanced Fighting Style Analysis**: 13 detailed style classifications across three main categories:
+  - 🥊 **Strikers**: Boxer, Kickboxer, Muay Thai, Karate, Taekwondo specialists
+  - 🤼 **Grapplers**: Wrestler, BJJ, Judoka, Sambo experts
+  - 🧬 **Hybrids**: Wrestle-Boxer, Striker-Grappler, All-Rounder versatile fighters
+- **Style Matchup Intelligence**: Category-based matchup features (e.g., Striker vs Grappler dynamics)
 - **Betting Odds Integration**: Leverages market intelligence through implied probabilities from bookmaker odds
 - **ELO Rating System**: Dynamic fighter rankings with inactivity decay and title fight bonuses
-- **Interactive Dashboard**: Streamlit-based web interface with fighter profiles, rankings, and fight simulator
+- **Interactive Dashboard**: Streamlit-based web interface with enhanced fighter profiles, complete fight history, rankings, and fight simulator
 - **Automated Updates**: Weekly data pipeline for scraping new events and retraining models
 - **Feature Explainability**: SHAP-ready architecture with feature importance analysis
 - **Offline Operation**: Runs entirely without external API dependencies using cached/generated data
@@ -18,22 +23,23 @@ An advanced machine learning system for predicting Mixed Martial Arts (MMA) figh
 1. **Rankings Scraper**: Pulls UFC official rankings (with fallback data)
 2. **Fighter Stats Scraper**: Comprehensive fighter statistics with intelligent caching
 3. **Events Scraper**: Historical fight results with method and outcome data
-4. **Fighter Styles**: Classification of fighters by primary fighting style
-5. **Betting Odds**: Historical and current bookmaker odds for enhanced predictions
-6. **Dataset Builder**: Merges and cleans data with quality scoring
-7. **ELO Pipeline**: Updates ratings based on fight outcomes with special adjustments
+4. **Fighter Styles**: Detailed classification of 87+ fighters across 13 specialized fighting styles
+5. **Fight History**: Complete career records with event names, finish techniques, round/time data, and strike statistics
+6. **Betting Odds**: Historical and current bookmaker odds for enhanced predictions
+7. **Dataset Builder**: Merges and cleans data with quality scoring
+8. **ELO Pipeline**: Updates ratings based on fight outcomes with special adjustments
 
 ### 🤖 ML Models
 - Primary: **Ensemble (Random Forest + Neural Network)** - Combines tree-based and deep learning approaches
 - Alternatives: Random Forest, Neural Network (MLP), Decision Tree, XGBoost, LightGBM
 - **Neural Network**: Multi-layer perceptron with 64/32 hidden units, early stopping, adaptive learning
 - Calibrated probability outputs for reliable confidence estimates
-- 70+ engineered features including:
-  - Physical attributes (height, reach, age)
+- **85+ engineered features** including:
+  - Physical attributes (height, reach, age, weight class)
   - Performance metrics (striking, grappling, submissions)
   - ELO ratings and differentials
-  - **Fighter style features** (one-hot encoded specializations)
-  - **Style matchup indicators** (e.g., Striker vs Wrestler)
+  - **Detailed fighter style features** (13 specialized styles with one-hot encoding = 26 features)
+  - **Category-level matchup indicators** (9 strategic matchup features)
   - **Betting odds probabilities** (implied win probabilities from market)
 
 ## Installation
@@ -95,10 +101,40 @@ streamlit run dashboard_app.py
 
 Navigate to http://localhost:8501 in your browser to access:
 - **Home**: System overview and model metrics
-- **Fighter Profiles**: Detailed fighter statistics and performance radar charts
+- **Fighter Profiles**: Enhanced profiles with:
+  - Detailed fighting style classification and descriptions
+  - Complete fight history with scrollable tables
+  - Event names, opponents, results, and finish techniques
+  - Round-by-round statistics and strike data
+  - Performance radar charts
+  - Weight class and rankings
 - **Rankings**: ELO-based rankings by weight class
-- **Fight Simulator**: Predict outcomes between any two fighters
+- **Fight Simulator**: Predict outcomes between any two fighters with style analysis
 - **Feature Importance**: Understand key factors in predictions
+
+### Enhanced Fighter Profiles
+
+The fighter profile page now includes comprehensive career information:
+
+**Fighting Style Classification** 🥋
+- 13 specialized fighting styles across three categories:
+  - **Strikers** (🥊): Boxer, Kickboxer, Muay Thai, Karate, Taekwondo
+  - **Grapplers** (🤼): Wrestler, BJJ, Judoka, Sambo  
+  - **Hybrids** (🧬): Wrestle-Boxer, Striker-Grappler, All-Rounder
+- Style-specific descriptions explain each fighter's approach
+- Example: "🇹🇭 Striker emphasizing elbows, knees, and clinch work" for Muay Thai specialists
+
+**Complete Fight History** 📋
+Each fighter's profile displays a scrollable table with every fight in their career:
+- **Date**: When the fight took place
+- **Opponent**: Name of the opponent
+- **Event**: Full event name (e.g., "UFC 280", "Bellator 220")
+- **Result**: Win/Loss (color-coded: green for wins, red for losses)
+- **Method**: KO/TKO, Submission, or Decision
+- **Round**: Round number when fight ended
+- **Time**: Duration in MM:SS format
+- **Sig. Strikes**: Strikes landed/received (e.g., "43 / 28")
+- **Finish Technique**: Specific ending sequence (e.g., "Rear-naked choke", "Head kick KO")
 
 ### Command Line Predictions
 
@@ -136,7 +172,10 @@ MMA-Predictor/
 ├── data/                      # Data files (CSV)
 │   ├── ufc_rankings.csv
 │   ├── fighter_stats.csv
+│   ├── fighter_styles.csv    # 87+ fighters with detailed style classifications
+│   ├── fight_history.csv     # Complete fight records with techniques and stats
 │   ├── fight_results.csv
+│   ├── fight_odds.csv
 │   ├── fighters_top10_men.csv
 │   └── elo_ratings.csv
 ├── artifacts/                 # Model artifacts
@@ -156,13 +195,17 @@ MMA-Predictor/
 │   ├── test_csv_schema.py
 │   ├── test_model_training.py
 │   ├── test_scraper.py
-│   └── test_streamlit_import.py
-├── dashboard_app.py           # Streamlit dashboard
-├── data_processing.py         # Feature engineering
+│   ├── test_streamlit_import.py
+│   ├── test_new_features.py
+│   └── test_enhancements.py   # Comprehensive v3.0 feature validation
+├── dashboard_app.py           # Streamlit dashboard with enhanced profiles
+├── data_processing.py         # Feature engineering (85+ features)
+├── fight_history.py           # Fight history loading and formatting
 ├── elo_system.py              # ELO calculation engine
 ├── elo_pipeline.py            # ELO update orchestrator
 ├── infer.py                   # Prediction engine
 ├── train.py                   # Model training pipeline
+├── utils.py                   # Shared utility functions
 ├── requirements.txt           # Python dependencies
 └── README.md                  # This file
 ```
@@ -180,6 +223,9 @@ pytest tests/ -v --cov=. --cov-report=html
 
 # Run specific test file
 pytest tests/test_model_training.py -v
+
+# Run v3.0 enhancement tests
+python tests/test_enhancements.py
 ```
 
 All tests should pass:
@@ -188,6 +234,7 @@ All tests should pass:
 - ✅ Scraper functionality (5 tests)
 - ✅ Streamlit imports (9 tests)
 - ✅ New features validation (9 tests)
+- ✅ **Enhancement validation (4 tests)**: Fighter styles, fight history, data processing, dashboard imports
 
 ## Model Performance
 
@@ -307,14 +354,35 @@ pip install streamlit
 streamlit run dashboard_app.py
 ```
 
-## Recent Enhancements (v2.0)
+## Recent Enhancements (v3.0)
 
-### Completed Features ✅
-- [x] **Fighter style matchup analysis**: Incorporated fighter specializations (Striker, Wrestler, BJJ, etc.) and style vs. style dynamics
+### Latest Updates ✅ (v3.0 - Fighter Profiles & Advanced Styles)
+- [x] **Enhanced Fighter Profiles**: Complete fight history with detailed career records
+  - Event names and promotion information (UFC, Bellator, etc.)
+  - Fight-ending techniques and sequences (e.g., "Rear-naked choke", "Head kick KO")
+  - Round-by-round statistics with duration and strike data
+  - Scrollable, color-coded fight history tables in dashboard
+- [x] **Advanced Fighting Style System**: Expanded from 5 to 13 specialized styles
+  - Detailed striker subtypes: Boxer, Kickboxer, Muay Thai, Karate, Taekwondo
+  - Grappler specializations: Wrestler, BJJ, Judoka, Sambo
+  - Hybrid categories: Wrestle-Boxer, Striker-Grappler, All-Rounder
+  - 87+ fighters classified with detailed style descriptions
+- [x] **Enhanced ML Features**: Increased from 70 to 85+ engineered features
+  - 26 detailed style features (one-hot encoding for both fighters)
+  - 9 category-level matchup features (strategic advantages)
+  - Improved style matchup intelligence
+- [x] **Comprehensive Testing**: New test suite validates all enhancements
+  - Fighter styles loading and classification
+  - Fight history data integrity
+  - Feature engineering with new styles
+  - Dashboard module integration
+
+### Previous Features ✅ (v2.0)
+- [x] **Fighter style matchup analysis**: Incorporated fighter specializations and style vs. style dynamics
 - [x] **Betting odds integration**: Leverages market intelligence through implied probabilities
 - [x] **Neural Network model**: Added MLP classifier with 64/32 architecture for diverse modeling
 - [x] **Ensemble approach**: Combined Random Forest + Neural Network for improved accuracy
-- [x] **Enhanced feature set**: Expanded from 50+ to 70+ features including styles and odds
+- [x] **Enhanced feature set**: Expanded from 50+ to 85+ features including styles and odds
 - [x] **Improved accuracy**: Boosted test accuracy from ~60% to 85-92%
 
 ## Future Enhancements
@@ -323,9 +391,9 @@ streamlit run dashboard_app.py
 - [ ] SHAP value visualizations in dashboard
 - [ ] Real-time UFC Stats API integration
 - [ ] Historical backtest validation
-- [ ] Style-weighted fight history analysis
 - [ ] Injury and camp data integration
 - [ ] Fight outcome method prediction (not just winner)
+- [ ] Automated fight history scraping from multiple sources
 
 ### Potential Improvements
 - Neural network models (LSTM for fight sequences)
