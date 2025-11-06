@@ -453,7 +453,7 @@ def save_model(model, model_name, feature_names, metrics, feature_importance):
         'model_name': model_name,
         'trained_at': datetime.now().isoformat(),
         'metrics': convert_to_native(metrics),
-        'feature_importance': convert_to_native(feature_importance),
+        'feature_importance': convert_to_native(feature_importance) if feature_importance else {},
         'num_features': len(feature_names)
     }
     
