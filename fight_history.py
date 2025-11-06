@@ -68,9 +68,15 @@ def format_fight_duration(duration_seconds: int) -> str:
     if pd.isna(duration_seconds):
         return "N/A"
     
-    minutes = int(duration_seconds) // 60
-    seconds = int(duration_seconds) % 60
-    return f"{minutes}:{seconds:02d}"
+    try:
+        duration = int(duration_seconds)
+        if duration < 0:
+            return "N/A"
+        minutes = duration // 60
+        seconds = duration % 60
+        return f"{minutes}:{seconds:02d}"
+    except (ValueError, TypeError):
+        return "N/A"
 
 
 def get_fighter_record_summary(fighter_name: str, fight_history_df: Optional[pd.DataFrame] = None) -> Dict[str, int]:

@@ -172,6 +172,23 @@ def load_feature_names():
     with open(feature_names_file, 'r') as f:
         return json.load(f)
 
+def get_style_category(fighter_style: str, style_categories: dict) -> str:
+    """
+    Determine the category (Striker, Grappler, Hybrid) for a fighter's detailed style
+    
+    Args:
+        fighter_style: Detailed fighting style (e.g., 'Boxer', 'Wrestler')
+        style_categories: Dictionary mapping categories to lists of styles
+    
+    Returns:
+        Category name ('Striker', 'Grappler', 'Hybrid', or 'Unknown')
+    """
+    for category, styles in style_categories.items():
+        if fighter_style in styles:
+            return category
+    return 'Unknown'
+
+
 def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None, fighter_styles=None, odds=None):
     """
     Prepare features for a single fight prediction
@@ -269,14 +286,9 @@ def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None, fight
         for style in detailed_styles:
             features[f'f2_style_{style.lower().replace("-", "_").replace(" ", "_")}'] = 1 if f2_style == style else 0
         
-        # Determine style category for each fighter
-        f1_category = 'Unknown'
-        f2_category = 'Unknown'
-        for category, styles in style_categories.items():
-            if f1_style in styles:
-                f1_category = category
-            if f2_style in styles:
-                f2_category = category
+        # Determine style category for each fighter using helper function
+        f1_category = get_style_category(f1_style, style_categories)
+        f2_category = get_style_category(f2_style, style_categories)
         
         # Add category-level matchup features
         category_matchups = [

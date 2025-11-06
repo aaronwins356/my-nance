@@ -3,6 +3,7 @@ Test script to validate the new enhancements
 """
 import os
 import sys
+import traceback
 import pandas as pd
 
 # Add project root to path
@@ -150,7 +151,6 @@ def test_data_processing():
         
     except Exception as e:
         print(f"❌ FAILED: {e}\n")
-        import traceback
         traceback.print_exc()
         return False
 
