@@ -503,7 +503,10 @@ def train_and_compare_models():
     if 'Ensemble' not in best_model_name:
         calibrated_model = calibrate_model(best_model, X_train, y_train)
     else:
-        print("\nSkipping calibration for ensemble (already averaging calibrated models)")
+        # For ensemble, the individual models (RF and NN) are not calibrated here
+        # The averaging of probabilities from multiple models provides some implicit calibration
+        # In production, you may want to calibrate the ensemble output using CalibratedClassifierCV
+        print("\nSkipping calibration for ensemble (already averaging multiple models)")
         calibrated_model = best_model
     
     # Get feature importance (from Random Forest or best tree model)

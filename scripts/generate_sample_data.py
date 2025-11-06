@@ -90,8 +90,8 @@ def generate_fight_results(fighter_stats):
         
         # Determine method
         method = np.random.choice(
-            ['KO/TKO', 'Submission', 'Decision', 'Decision'],
-            p=[0.25, 0.15, 0.6, 0.0]  # Adjust last to 0 since we have 4 items
+            ['KO/TKO', 'Submission', 'Decision'],
+            p=[0.25, 0.15, 0.6]
         )
         
         fight = {

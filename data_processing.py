@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import json
+from utils import american_odds_to_probability
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 ARTIFACTS_DIR = os.path.join(os.path.dirname(__file__), 'artifacts')
@@ -281,15 +282,9 @@ def prepare_single_fight(fighter1_stats, fighter2_stats, elo_ratings=None, fight
     
     # Add odds features if available
     if odds and 'fighter1_odds' in odds and 'fighter2_odds' in odds:
-        # Convert American odds to implied probability
-        def american_to_prob(odds_val):
-            if odds_val < 0:
-                return (-odds_val) / (-odds_val + 100)
-            else:
-                return 100 / (odds_val + 100)
-        
-        f1_prob = american_to_prob(odds['fighter1_odds'])
-        f2_prob = american_to_prob(odds['fighter2_odds'])
+        # Convert American odds to implied probability using shared utility
+        f1_prob = american_odds_to_probability(odds['fighter1_odds'])
+        f2_prob = american_odds_to_probability(odds['fighter2_odds'])
         total = f1_prob + f2_prob
         features['f1_odds_implied_prob'] = f1_prob / total
         features['f2_odds_implied_prob'] = f2_prob / total

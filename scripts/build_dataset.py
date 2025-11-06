@@ -11,6 +11,8 @@ from datetime import datetime
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from utils import american_odds_to_probability
+
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
 
 def ensure_directories():
@@ -40,16 +42,6 @@ def load_fight_odds():
     else:
         print("Warning: Fight odds not found, odds features will be set to default")
         return pd.DataFrame()
-
-def american_odds_to_probability(odds):
-    """Convert American odds to implied probability"""
-    if odds < 0:
-        # Favorite: odds = -X means you bet X to win 100
-        prob = (-odds) / (-odds + 100)
-    else:
-        # Underdog: odds = +X means you bet 100 to win X
-        prob = 100 / (odds + 100)
-    return prob
 
 def load_data():
     """Load all scraped data"""

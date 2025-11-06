@@ -60,7 +60,7 @@ def test_fight_odds_schema():
 
 def test_american_odds_conversion():
     """Test American odds to probability conversion"""
-    from scripts.build_dataset import american_odds_to_probability
+    from utils import american_odds_to_probability
     
     # Test favorite odds
     prob_favorite = american_odds_to_probability(-200)
