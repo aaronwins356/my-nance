@@ -9,6 +9,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from datetime import datetime
+import platform
 
 # ML models
 from sklearn.tree import DecisionTreeClassifier
@@ -19,6 +20,7 @@ from sklearn.metrics import (
     roc_auc_score, classification_report, confusion_matrix
 )
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.inspection import permutation_importance
 
 # Import data processing
 from data_processing import prepare_data, ensure_directories
@@ -73,6 +75,10 @@ except ImportError:
     print("Warning: MLPClassifier not available")
 
 ARTIFACTS_DIR = os.path.join(os.path.dirname(__file__), 'artifacts')
+
+# OS Check - FightIQ currently supports Windows environments only
+if platform.system() != "Windows":
+    raise SystemExit("FightIQ currently supports Windows environments only.")
 
 def train_decision_tree(X_train, y_train, max_depth=10, min_samples_split=20):
     """
@@ -342,40 +348,73 @@ def calibrate_model(model, X_train, y_train):
     
     return calibrated_model
 
-def get_feature_importance(model, feature_names, top_n=20):
+def get_feature_importance(model, feature_names, X_val=None, y_val=None):
     """
-    Extract feature importance from model
+    Safely extract or approximate feature importances for any model type.
+    Uses native .feature_importances_ if available,
+    otherwise falls back to permutation importance.
     
     Args:
         model: Trained model
         feature_names: List of feature names
-        top_n: Number of top features to return
+        X_val: Validation features (required for permutation importance)
+        y_val: Validation target (required for permutation importance)
     
     Returns:
-        Dictionary with feature importance
+        Dictionary with feature importance, or None if not applicable
     """
-    # Get feature importance based on model type
-    if hasattr(model, 'feature_importances_'):
-        importances = model.feature_importances_
-    elif hasattr(model, 'calibrated_classifiers_'):
-        # For calibrated models, get from base estimator
-        importances = model.calibrated_classifiers_[0].estimator.feature_importances_
+    # Handle calibrated models - unwrap to get base estimator
+    if hasattr(model, "calibrated_classifiers_"):
+        estimator = model.calibrated_classifiers_[0].estimator
     else:
-        print("Model does not support feature importance")
-        return {}
+        estimator = model
+
+    # Try to get native feature importances (tree-based models)
+    if hasattr(estimator, "feature_importances_"):
+        importances = estimator.feature_importances_
+        importance_dict = dict(zip(feature_names, importances))
+        
+        # Sort and display top features
+        sorted_features = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
+        print(f"\nTop 20 Most Important Features:")
+        print("-" * 60)
+        for i, (feature, importance) in enumerate(sorted_features[:20], 1):
+            print(f"{i:2d}. {feature:35s} {importance:.4f}")
+        
+        return dict(sorted_features)
     
-    # Create feature importance dictionary
-    importance_dict = dict(zip(feature_names, importances))
+    # Fallback to permutation importance for non-tree models
+    elif X_val is not None and y_val is not None:
+        print("Computing permutation importance for non-tree model...")
+        result = permutation_importance(estimator, X_val, y_val, n_repeats=10, random_state=42)
+        importance_dict = dict(zip(feature_names, result.importances_mean))
+        
+        # Sort and display top features
+        sorted_features = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
+        print(f"\nTop 20 Most Important Features (Permutation Importance):")
+        print("-" * 60)
+        for i, (feature, importance) in enumerate(sorted_features[:20], 1):
+            print(f"{i:2d}. {feature:35s} {importance:.4f}")
+        
+        return dict(sorted_features)
     
-    # Sort by importance
-    sorted_features = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
+    else:
+        print("Feature importance not available (no validation data provided).")
+        return None
+
+def save_feature_importances(feature_importance):
+    """
+    Save feature importances to a separate file
     
-    print(f"\nTop {top_n} Most Important Features:")
-    print("-" * 60)
-    for i, (feature, importance) in enumerate(sorted_features[:top_n], 1):
-        print(f"{i:2d}. {feature:35s} {importance:.4f}")
+    Args:
+        feature_importance: Dictionary with feature importance
+    """
+    ensure_directories()
     
-    return dict(sorted_features)
+    importance_file = os.path.join(ARTIFACTS_DIR, 'feature_importances.json')
+    with open(importance_file, 'w') as f:
+        json.dump(feature_importance, f, indent=2)
+    print(f"Saved feature importances to {importance_file}")
 
 def save_model(model, model_name, feature_names, metrics, feature_importance):
     """
@@ -430,6 +469,9 @@ def train_and_compare_models():
     """
     Train multiple models and select the best one
     """
+    # Ensure artifacts directory exists
+    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
+    
     print("="*60)
     print("FightIQ Model Training Pipeline")
     print("="*60)
@@ -513,9 +555,15 @@ def train_and_compare_models():
     feature_importance = {}
     if best_model_name == 'RF+NN Ensemble':
         # Use Random Forest feature importance from the ensemble
-        feature_importance = get_feature_importance(models['RandomForest'], feature_names)
+        feature_importance = get_feature_importance(models['RandomForest'], feature_names, X_test, y_test)
     else:
-        feature_importance = get_feature_importance(calibrated_model, feature_names)
+        feature_importance = get_feature_importance(calibrated_model, feature_names, X_test, y_test)
+    
+    # Save feature importances if available
+    if feature_importance:
+        save_feature_importances(feature_importance)
+    else:
+        print("Skipping feature importance saving (not applicable for this model).")
     
     # Save best model
     save_model(calibrated_model, best_model_name, feature_names, 

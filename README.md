@@ -48,47 +48,29 @@ An advanced machine learning system for predicting Mixed Martial Arts (MMA) figh
 - Python 3.10 or higher
 - pip package manager
 
-### Quick Start
+## 🪟 Windows Setup Instructions
 
-#### Windows (PowerShell)
-```powershell
-# Clone the repository
-git clone https://github.com/aaronwins356/MMA-Predictor.git
-cd MMA-Predictor
+1. Clone the repository:
+   ```powershell
+   git clone https://github.com/aaronwins356/MMA-Predictor.git
+   cd MMA-Predictor
+   ```
 
-# Run the launcher (handles setup automatically)
-.\scripts\launch_fightiq.ps1
-```
+2. Allow PowerShell scripts to run:
+   ```powershell
+   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+   ```
 
-#### Windows (Batch)
-```cmd
-scripts\launch_fightiq.bat
-```
+3. Launch the environment:
+   ```powershell
+   .\scripts\launch_fightiq.ps1
+   ```
 
-#### Linux/Mac
-```bash
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run data pipeline
-python scripts/scrape_rankings.py
-python scripts/scrape_fighter_stats.py
-python scripts/scrape_events.py
-python scripts/build_dataset.py
-
-# Update ELO ratings
-python elo_pipeline.py
-
-# Train model
-python train.py
-
-# Launch dashboard
-streamlit run dashboard_app.py
-```
+4. (Optional) Run training manually:
+   ```powershell
+   .\.venv\Scripts\Activate.ps1
+   python train.py
+   ```
 
 ## Usage
 
