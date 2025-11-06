@@ -20,13 +20,18 @@ def ensure_directories():
     os.makedirs(DATA_DIR, exist_ok=True)
 
 def load_fighter_styles():
-    """Load fighter style classifications"""
+    """Load fighter style classifications with detailed styles"""
     styles_file = os.path.join(DATA_DIR, 'fighter_styles.csv')
     
     if os.path.exists(styles_file):
         styles_df = pd.read_csv(styles_file)
         print(f"Loaded {len(styles_df)} fighter styles")
-        return dict(zip(styles_df['fighter_name'], styles_df['primary_style']))
+        
+        # Use detailed_style if available, otherwise fall back to primary_style
+        if 'detailed_style' in styles_df.columns:
+            return dict(zip(styles_df['fighter_name'], styles_df['detailed_style']))
+        else:
+            return dict(zip(styles_df['fighter_name'], styles_df['primary_style']))
     else:
         print("Warning: Fighter styles not found, will use default 'Unknown' style")
         return {}

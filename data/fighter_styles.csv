@@ -1,85 +1,88 @@
-fighter_name,primary_style
-Jon Jones,Wrestler
-Anderson Silva,Striker
-Georges St-Pierre,Wrestler
-Khabib Nurmagomedov,Wrestler
-Daniel Cormier,Wrestler
-Demetrious Johnson,Well-Rounded
-Max Holloway,Striker
-Israel Adesanya,Striker
-Kamaru Usman,Wrestler
-Amanda Nunes,Striker
-Conor McGregor,Striker
-Tony Ferguson,Well-Rounded
-Charles Oliveira,BJJ
-Islam Makhachev,Wrestler
-Alexander Volkanovski,Well-Rounded
-Francis Ngannou,Striker
-Stipe Miocic,Boxer
-Leon Edwards,Striker
-Colby Covington,Wrestler
-Justin Gaethje,Striker
-Dustin Poirier,Striker
-Sean O'Malley,Striker
-Aljamain Sterling,Wrestler
-Jiří Procházka,Striker
-Jan Błachowicz,Striker
-Alex Pereira,Striker
-Robert Whittaker,Striker
-Marvin Vettori,Wrestler
-Paulo Costa,Striker
-Darren Till,Striker
-Jorge Masvidal,Boxer
-Nate Diaz,BJJ
-Nick Diaz,BJJ
-Demian Maia,BJJ
-Brian Ortega,BJJ
-Gilbert Burns,BJJ
-Rafael dos Anjos,BJJ
-Beneil Dariush,BJJ
-Michael Chandler,Wrestler
-Dan Hooker,Striker
-Yair Rodriguez,Striker
-Brandon Moreno,Well-Rounded
-Deiveson Figueiredo,Well-Rounded
-Henry Cejudo,Wrestler
-TJ Dillashaw,Wrestler
-Dominick Cruz,Wrestler
-Cody Garbrandt,Striker
-Petr Yan,Striker
-Jose Aldo,Striker
-Frankie Edgar,Wrestler
-Benson Henderson,Wrestler
-Anthony Pettis,Striker
-Eddie Alvarez,Boxer
-Jared Cannonier,Striker
-Derek Brunson,Wrestler
-Edmen Shahbazyan,Striker
-Kelvin Gastelum,Boxer
-Uriah Hall,Striker
-Chris Weidman,Wrestler
-Luke Rockhold,BJJ
-Michael Bisping,Boxer
-Yoel Romero,Wrestler
-Ronaldo Souza,BJJ
-Lyoto Machida,Striker
-Rashad Evans,Wrestler
-Maurício Rua,Striker
-Quinton Jackson,Boxer
-Glover Teixeira,BJJ
-Anthony Smith,Striker
-Thiago Santos,Striker
-Dominick Reyes,Striker
-Ovince Saint Preux,Striker
-Volkan Oezdemir,Striker
-Ryan Bader,Wrestler
-Phil Davis,Wrestler
-Alistair Overeem,Striker
-Junior dos Santos,Boxer
-Cain Velasquez,Wrestler
-Fabricio Werdum,BJJ
-Curtis Blaydes,Wrestler
-Derrick Lewis,Striker
-Ciryl Gane,Striker
-Tom Aspinall,Well-Rounded
-Sergei Pavlovich,Striker
+fighter_name,primary_style,detailed_style,style_category
+Jon Jones,Wrestler,Wrestler,Grappler
+Anderson Silva,Striker,Muay Thai,Striker
+Georges St-Pierre,Well-Rounded,Wrestle-Boxer,Hybrid
+Khabib Nurmagomedov,Wrestler,Sambo,Grappler
+Daniel Cormier,Wrestler,Wrestle-Boxer,Hybrid
+Demetrious Johnson,Well-Rounded,All-Rounder,Hybrid
+Max Holloway,Striker,Boxer,Striker
+Israel Adesanya,Striker,Kickboxer,Striker
+Kamaru Usman,Wrestler,Wrestler,Grappler
+Amanda Nunes,Striker,Striker-Grappler,Hybrid
+Conor McGregor,Striker,Boxer,Striker
+Tony Ferguson,Well-Rounded,All-Rounder,Hybrid
+Charles Oliveira,BJJ,BJJ,Grappler
+Islam Makhachev,Wrestler,Sambo,Grappler
+Alexander Volkanovski,Well-Rounded,All-Rounder,Hybrid
+Francis Ngannou,Striker,Boxer,Striker
+Stipe Miocic,Striker,Boxer,Striker
+Leon Edwards,Well-Rounded,Striker-Grappler,Hybrid
+Colby Covington,Wrestler,Wrestler,Grappler
+Justin Gaethje,Striker,Boxer,Striker
+Dustin Poirier,Striker,Boxer,Striker
+Sean O'Malley,Striker,Kickboxer,Striker
+Aljamain Sterling,Wrestler,Wrestler,Grappler
+Jiří Procházka,Striker,Muay Thai,Striker
+Jan Błachowicz,Striker,Muay Thai,Striker
+Alex Pereira,Striker,Kickboxer,Striker
+Robert Whittaker,Well-Rounded,All-Rounder,Hybrid
+Marvin Vettori,Wrestler,Wrestler,Grappler
+Paulo Costa,Striker,Muay Thai,Striker
+Darren Till,Striker,Muay Thai,Striker
+Jorge Masvidal,Striker,Boxer,Striker
+Nate Diaz,BJJ,BJJ,Grappler
+Nick Diaz,BJJ,BJJ,Grappler
+Demian Maia,BJJ,BJJ,Grappler
+Brian Ortega,BJJ,BJJ,Grappler
+Gilbert Burns,BJJ,BJJ,Grappler
+Rafael dos Anjos,BJJ,BJJ,Grappler
+Beneil Dariush,BJJ,BJJ,Grappler
+Michael Chandler,Wrestler,Wrestler,Grappler
+Dan Hooker,Striker,Kickboxer,Striker
+Yair Rodriguez,Striker,Taekwondo,Striker
+Brandon Moreno,Well-Rounded,All-Rounder,Hybrid
+Deiveson Figueiredo,Well-Rounded,All-Rounder,Hybrid
+Henry Cejudo,Wrestler,Wrestler,Grappler
+TJ Dillashaw,Wrestler,Wrestle-Boxer,Hybrid
+Dominick Cruz,Wrestler,Wrestle-Boxer,Hybrid
+Cody Garbrandt,Striker,Boxer,Striker
+Petr Yan,Striker,Boxer,Striker
+Jose Aldo,Striker,Boxer,Striker
+Frankie Edgar,Wrestler,Wrestle-Boxer,Hybrid
+Benson Henderson,Wrestler,Wrestler,Grappler
+Anthony Pettis,Striker,Taekwondo,Striker
+Eddie Alvarez,Striker,Boxer,Striker
+Jared Cannonier,Striker,Kickboxer,Striker
+Derek Brunson,Wrestler,Wrestler,Grappler
+Edmen Shahbazyan,Striker,Kickboxer,Striker
+Kelvin Gastelum,Striker,Boxer,Striker
+Uriah Hall,Striker,Karate,Striker
+Chris Weidman,Wrestler,Wrestler,Grappler
+Luke Rockhold,BJJ,BJJ,Grappler
+Michael Bisping,Striker,Boxer,Striker
+Yoel Romero,Wrestler,Wrestler,Grappler
+Ronaldo Souza,BJJ,BJJ,Grappler
+Lyoto Machida,Striker,Karate,Striker
+Rashad Evans,Wrestler,Wrestle-Boxer,Hybrid
+Maurício Rua,Striker,Muay Thai,Striker
+Quinton Jackson,Striker,Boxer,Striker
+Glover Teixeira,BJJ,BJJ,Grappler
+Anthony Smith,Striker,Kickboxer,Striker
+Thiago Santos,Striker,Muay Thai,Striker
+Dominick Reyes,Striker,Boxer,Striker
+Ovince Saint Preux,Wrestler,Wrestler,Grappler
+Volkan Oezdemir,Striker,Kickboxer,Striker
+Ryan Bader,Wrestler,Wrestle-Boxer,Hybrid
+Phil Davis,Wrestler,Wrestler,Grappler
+Alistair Overeem,Striker,Kickboxer,Striker
+Junior dos Santos,Striker,Boxer,Striker
+Cain Velasquez,Wrestler,Wrestler,Grappler
+Fabricio Werdum,BJJ,BJJ,Grappler
+Curtis Blaydes,Wrestler,Wrestler,Grappler
+Derrick Lewis,Striker,Boxer,Striker
+Ciryl Gane,Striker,Muay Thai,Striker
+Tom Aspinall,Well-Rounded,All-Rounder,Hybrid
+Sergei Pavlovich,Striker,Boxer,Striker
+Stephen Thompson,Striker,Karate,Striker
+Ronda Rousey,Wrestler,Judoka,Grappler
+Fedor Emelianenko,Well-Rounded,Sambo,Hybrid

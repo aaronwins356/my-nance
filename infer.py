@@ -66,10 +66,10 @@ def load_fighter_stats():
 
 def load_fighter_styles():
     """
-    Load fighter style classifications
+    Load fighter style classifications with detailed styles
     
     Returns:
-        Dictionary mapping fighter name to style
+        Dictionary mapping fighter name to detailed style
     """
     styles_file = os.path.join(DATA_DIR, 'fighter_styles.csv')
     
@@ -79,7 +79,12 @@ def load_fighter_styles():
     
     import pandas as pd
     styles_df = pd.read_csv(styles_file)
-    return dict(zip(styles_df['fighter_name'], styles_df['primary_style']))
+    
+    # Use detailed_style if available, otherwise fall back to primary_style
+    if 'detailed_style' in styles_df.columns:
+        return dict(zip(styles_df['fighter_name'], styles_df['detailed_style']))
+    else:
+        return dict(zip(styles_df['fighter_name'], styles_df['primary_style']))
 
 def load_elo_ratings():
     """
