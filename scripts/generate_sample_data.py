@@ -95,6 +95,7 @@ def generate_fight_results(fighter_stats):
         )
         
         fight = {
+            'event_id': f'event_{i+1}',
             'fighter1': fighter1,
             'fighter2': fighter2,
             'winner': winner,
