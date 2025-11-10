@@ -51,24 +51,26 @@ class FightHistoryScraper:
         # Setup logging
         self._setup_logging()
     
-    def _create_session(self) -> requests.Session:
+    def _create_session(self):
         """Create requests session with retry logic"""
         if requests is None:
-            raise ImportError("requests library not available. Install with: pip install requests")
+            # Return None if requests not available
+            return None
         
         session = requests.Session()
         
         # Configure retries
-        retry_strategy = Retry(
-            total=self.config.max_retries,
-            backoff_factor=self.config.retry_backoff,
-            status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["HEAD", "GET", "OPTIONS"]
-        )
-        
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        session.mount("http://", adapter)
-        session.mount("https://", adapter)
+        if Retry is not None and HTTPAdapter is not None:
+            retry_strategy = Retry(
+                total=self.config.max_retries,
+                backoff_factor=self.config.retry_backoff,
+                status_forcelist=[429, 500, 502, 503, 504],
+                allowed_methods=["HEAD", "GET", "OPTIONS"]
+            )
+            
+            adapter = HTTPAdapter(max_retries=retry_strategy)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
         
         # Set headers
         session.headers.update({

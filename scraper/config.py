@@ -50,6 +50,13 @@ class ScraperConfig:
     log_level: str = "INFO"
     log_file: str = "scraper.log"
     log_to_console: bool = True
+    
+    def __post_init__(self):
+        """Initialize defaults after dataclass creation"""
+        if not self.valid_results:
+            self.valid_results = ["Win", "Loss", "Draw", "NC", "DQ"]
+        if not self.valid_methods:
+            self.valid_methods = ["KO/TKO", "Submission", "Decision"]
 
 
 def load_config(config_path: Optional[str] = None) -> ScraperConfig:
@@ -83,49 +90,52 @@ def load_config(config_path: Optional[str] = None) -> ScraperConfig:
         selectors = config_data.get('selectors', {})
         validation = config_data.get('validation', {})
         output = config_data.get('output', {})
-        logging = config_data.get('logging', {})
+        logging_config = config_data.get('logging', {})
         features = config_data.get('features', {})
+        
+        # Create default config for fallback values
+        default = ScraperConfig()
         
         # Build config object
         config = ScraperConfig(
             # Scraping settings
-            base_url=scraping.get('base_url', ScraperConfig.base_url),
-            search_url=scraping.get('search_url', ScraperConfig.search_url),
-            timeout=scraping.get('timeout', ScraperConfig.timeout),
-            max_retries=scraping.get('max_retries', ScraperConfig.max_retries),
-            retry_backoff=scraping.get('retry_backoff', ScraperConfig.retry_backoff),
-            user_agent=scraping.get('user_agent', ScraperConfig.user_agent),
-            delay_between_requests=scraping.get('delay_between_requests', ScraperConfig.delay_between_requests),
-            delay_between_fighters=scraping.get('delay_between_fighters', ScraperConfig.delay_between_fighters),
+            base_url=scraping.get('base_url', default.base_url),
+            search_url=scraping.get('search_url', default.search_url),
+            timeout=scraping.get('timeout', default.timeout),
+            max_retries=scraping.get('max_retries', default.max_retries),
+            retry_backoff=scraping.get('retry_backoff', default.retry_backoff),
+            user_agent=scraping.get('user_agent', default.user_agent),
+            delay_between_requests=scraping.get('delay_between_requests', default.delay_between_requests),
+            delay_between_fighters=scraping.get('delay_between_fighters', default.delay_between_fighters),
             
             # Selectors
             selectors=selectors,
             
             # Validation
-            valid_results=validation.get('valid_results', ScraperConfig.valid_results),
-            valid_methods=validation.get('valid_methods', ScraperConfig.valid_methods),
-            date_format=validation.get('date_format', ScraperConfig.date_format),
-            min_year=validation.get('min_year', ScraperConfig.min_year),
-            max_year=validation.get('max_year', ScraperConfig.max_year),
-            min_round=validation.get('min_round', ScraperConfig.min_round),
-            max_round=validation.get('max_round', ScraperConfig.max_round),
+            valid_results=validation.get('valid_results', default.valid_results),
+            valid_methods=validation.get('valid_methods', default.valid_methods),
+            date_format=validation.get('date_format', default.date_format),
+            min_year=validation.get('min_year', default.min_year),
+            max_year=validation.get('max_year', default.max_year),
+            min_round=validation.get('min_round', default.min_round),
+            max_round=validation.get('max_round', default.max_round),
             
             # Output
-            data_dir=output.get('data_dir', ScraperConfig.data_dir),
-            cache_dir=output.get('cache_dir', ScraperConfig.cache_dir),
-            fight_history_file=output.get('fight_history_file', ScraperConfig.fight_history_file),
-            cache_expiration_days=output.get('cache_expiration_days', ScraperConfig.cache_expiration_days),
+            data_dir=output.get('data_dir', default.data_dir),
+            cache_dir=output.get('cache_dir', default.cache_dir),
+            fight_history_file=output.get('fight_history_file', default.fight_history_file),
+            cache_expiration_days=output.get('cache_expiration_days', default.cache_expiration_days),
             
             # Features
-            use_cache=features.get('use_cache', ScraperConfig.use_cache),
-            save_html_cache=features.get('save_html_cache', ScraperConfig.save_html_cache),
-            validate_on_scrape=features.get('validate_on_scrape', ScraperConfig.validate_on_scrape),
-            normalize_text=features.get('normalize_text', ScraperConfig.normalize_text),
+            use_cache=features.get('use_cache', default.use_cache),
+            save_html_cache=features.get('save_html_cache', default.save_html_cache),
+            validate_on_scrape=features.get('validate_on_scrape', default.validate_on_scrape),
+            normalize_text=features.get('normalize_text', default.normalize_text),
             
             # Logging
-            log_level=logging.get('level', ScraperConfig.log_level),
-            log_file=logging.get('file', ScraperConfig.log_file),
-            log_to_console=logging.get('console', ScraperConfig.log_to_console),
+            log_level=logging_config.get('level', default.log_level),
+            log_file=logging_config.get('file', default.log_file),
+            log_to_console=logging_config.get('console', default.log_to_console),
         )
         
         return config
