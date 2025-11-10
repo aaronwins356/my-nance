@@ -121,81 +121,61 @@ def get_fighter_record_summary(fighter_name: str, fight_history_df: Optional[pd.
     }
 
 
-def generate_sample_fight_history(fighter_stats_df: pd.DataFrame) -> pd.DataFrame:
+def scrape_and_update_fight_history(fighter_list_df: pd.DataFrame = None, use_cache: bool = True) -> pd.DataFrame:
     """
-    Generate sample fight history data for fighters without existing history
+    Scrape real fight history data for fighters
+    
+    This function replaces the old generate_sample_fight_history with real scraping.
+    It uses the scraper module to fetch actual fight histories from UFC Stats.
     
     Args:
-        fighter_stats_df: DataFrame with fighter statistics
+        fighter_list_df: DataFrame with fighter information (names and optionally URLs)
+        use_cache: Whether to use cached data if available
     
     Returns:
-        DataFrame with generated fight history
+        DataFrame with scraped fight history
     """
-    import random
-    import numpy as np
-    from datetime import datetime, timedelta
-    
-    history_records = []
-    
-    for _, fighter in fighter_stats_df.iterrows():
-        fighter_name = fighter['name']
-        total_fights = fighter['wins'] + fighter['losses']
+    try:
+        from scraper import scrape_fight_history, load_config
+        from scraper.fight_scraper import FightHistoryScraper
         
-        # Generate fight history for each fight
-        for fight_num in range(int(total_fights)):
-            # Determine if this was a win or loss
-            is_win = fight_num < fighter['wins']
+        config = load_config()
+        config.use_cache = use_cache
+        scraper = FightHistoryScraper(config)
+        
+        all_fights = []
+        
+        if fighter_list_df is not None:
+            print(f"Scraping fight histories for {len(fighter_list_df)} fighters...")
             
-            # Generate date (going back in time)
-            days_ago = (total_fights - fight_num) * 120 + random.randint(0, 60)
-            event_date = (datetime.now() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
-            
-            # Generate opponent name (simplified)
-            opponent = f"Opponent {fight_num + 1}"
-            
-            # Determine method
-            if is_win:
-                method_choice = random.random()
-                if method_choice < 0.3:
-                    method = 'KO/TKO'
-                    technique = random.choice(['Head kick KO', 'Punches', 'Left hook KO', 'Body shots'])
-                elif method_choice < 0.5:
-                    method = 'Submission'
-                    technique = random.choice(['Rear-naked choke', 'Arm-triangle choke', 'Guillotine choke', 'Armbar'])
-                else:
-                    method = 'Decision'
-                    technique = random.choice(['Unanimous Decision', 'Split Decision', 'Majority Decision'])
-            else:
-                method = random.choice(['KO/TKO', 'Submission', 'Decision'])
-                technique = method if method == 'Decision' else 'N/A'
-            
-            # Generate round and duration
-            if method == 'Decision':
-                round_num = random.choice([3, 5])
-                duration = round_num * 300
-            else:
-                round_num = random.randint(1, 3)
-                duration = (round_num - 1) * 300 + random.randint(30, 300)
-            
-            # Generate strikes
-            sig_strikes = random.randint(20, 150)
-            sig_strikes_received = random.randint(15, 120)
-            
-            history_records.append({
-                'fighter_name': fighter_name,
-                'opponent_name': opponent,
-                'event_date': event_date,
-                'event_name': f'UFC Event {fight_num + 1}',
-                'result': 'Win' if is_win else 'Loss',
-                'win_method': method,
-                'round_number': round_num,
-                'fight_duration_seconds': duration,
-                'sig_strikes_landed': sig_strikes,
-                'sig_strikes_received': sig_strikes_received,
-                'fight_ending_technique': technique
-            })
-    
-    return pd.DataFrame(history_records)
+            for idx, fighter in fighter_list_df.iterrows():
+                fighter_name = fighter.get('name', fighter.get('fighter_name', ''))
+                fighter_url = fighter.get('fighter_url', fighter.get('url', ''))
+                
+                if not fighter_name:
+                    continue
+                
+                try:
+                    if fighter_url:
+                        fights = scrape_fight_history(fighter_url, fighter_name, config)
+                        all_fights.extend(fights)
+                        print(f"  Scraped {len(fights)} fights for {fighter_name}")
+                    else:
+                        print(f"  No URL for {fighter_name}, skipping")
+                except Exception as e:
+                    print(f"  Error scraping {fighter_name}: {e}")
+                    continue
+        
+        if not all_fights:
+            print("Warning: No fight data scraped. Check fighter list and URLs.")
+            return pd.DataFrame()
+        
+        return pd.DataFrame(all_fights)
+        
+    except ImportError as e:
+        print(f"Error: Could not import scraper module: {e}")
+        print("Make sure to install dependencies: pip install requests beautifulsoup4 pyyaml")
+        return pd.DataFrame()
 
 
 if __name__ == '__main__':
