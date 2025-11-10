@@ -165,6 +165,11 @@ MMA-Predictor/
 │   ├── model_metadata.json
 │   └── feature_names.json
 ├── cache/                     # Cached HTML/JSON responses
+├── scraper/                   # Fight history scraping module (NEW)
+│   ├── __init__.py
+│   ├── config.py             # Configuration management
+│   ├── validator.py          # Data validation and cleaning
+│   └── fight_scraper.py      # Core scraping with retry logic
 ├── scripts/                   # Data pipeline scripts
 │   ├── scrape_rankings.py
 │   ├── scrape_fighter_stats.py
@@ -177,12 +182,15 @@ MMA-Predictor/
 │   ├── test_csv_schema.py
 │   ├── test_model_training.py
 │   ├── test_scraper.py
+│   ├── test_fight_scraper.py # NEW: Tests for scraper module
 │   ├── test_streamlit_import.py
 │   ├── test_new_features.py
 │   └── test_enhancements.py   # Comprehensive v3.0 feature validation
+├── collect_fight_data.py      # NEW: Main scraper CLI entry point
+├── config.yaml                # NEW: Centralized configuration
 ├── dashboard_app.py           # Streamlit dashboard with enhanced profiles
 ├── data_processing.py         # Feature engineering (85+ features)
-├── fight_history.py           # Fight history loading and formatting
+├── fight_history.py           # Fight history loading and scraping integration
 ├── elo_system.py              # ELO calculation engine
 ├── elo_pipeline.py            # ELO update orchestrator
 ├── infer.py                   # Prediction engine
@@ -367,15 +375,176 @@ streamlit run dashboard_app.py
 - [x] **Enhanced feature set**: Expanded from 50+ to 85+ features including styles and odds
 - [x] **Improved accuracy**: Boosted test accuracy from ~60% to 85-92%
 
+## Data Collection & Scraping
+
+### New Fight History Scraper System
+
+The repository now includes a production-ready, modular scraping system that replaces the old fake data generation with real fight history collection.
+
+#### Architecture
+
+```
+scraper/
+├── __init__.py           # Module exports
+├── config.py             # Configuration management
+├── validator.py          # Data validation and cleaning
+└── fight_scraper.py      # Core scraping logic
+
+config.yaml               # Centralized configuration
+collect_fight_data.py     # Main CLI entry point
+```
+
+#### Key Features
+
+- **Real Data Scraping**: Fetches actual fight histories from UFC Stats
+- **Retry Logic**: Built-in retry mechanism with exponential backoff using `urllib3.Retry`
+- **Data Validation**: Validates dates, results, methods, rounds, and fighter names
+- **Text Normalization**: Cleans and standardizes all text fields
+- **Caching System**: Caches scraped data for 30 days to reduce load
+- **Quality Scoring**: Assigns quality scores based on data completeness
+- **Error Handling**: Gracefully handles network errors, parsing failures, and rate limits
+- **Logging**: Comprehensive logging to file and console
+- **Resume Support**: Can resume interrupted scraping sessions
+
+#### Usage
+
+**Command Line Interface:**
+
+```bash
+# Scrape fight histories for all fighters in a list
+python collect_fight_data.py --fighters data/fighter_stats.csv
+
+# Resume interrupted scraping (uses cache)
+python collect_fight_data.py --fighters data/fighter_stats.csv --resume
+
+# Specify custom output file
+python collect_fight_data.py --fighters data/fighter_stats.csv --output my_fights.csv
+
+# Verbose logging
+python collect_fight_data.py --fighters data/fighter_stats.csv --verbose
+
+# Use custom configuration
+python collect_fight_data.py --fighters data/fighter_stats.csv --config my_config.yaml
+```
+
+**Python API:**
+
+```python
+from scraper import scrape_fight_history, load_config
+
+# Scrape a single fighter
+config = load_config()
+fights = scrape_fight_history(
+    fighter_url="http://ufcstats.com/fighter-details/...",
+    fighter_name="Fighter Name",
+    config=config
+)
+
+# Or use the FightHistoryScraper class
+from scraper import FightHistoryScraper
+
+scraper = FightHistoryScraper(config)
+fights = scraper.scrape_fight_history(fighter_url, fighter_name)
+```
+
+**Integration with fight_history.py:**
+
+```python
+import pandas as pd
+from fight_history import scrape_and_update_fight_history
+
+# Load fighter list
+fighters_df = pd.read_csv('data/fighter_stats.csv')
+
+# Scrape fight histories
+fight_history_df = scrape_and_update_fight_history(fighters_df, use_cache=True)
+
+# Save results
+fight_history_df.to_csv('data/fight_history.csv', index=False)
+```
+
+#### Configuration
+
+The `config.yaml` file centralizes all scraping parameters:
+
+- **URLs**: Base URLs for UFC Stats and alternative sources
+- **Selectors**: CSS selectors for parsing HTML elements
+- **Validation Rules**: Valid results, methods, date ranges
+- **Rate Limiting**: Delays between requests and fighters
+- **Retry Settings**: Max retries, backoff strategy, timeouts
+- **Output Settings**: Data directories, file names, cache expiration
+- **Feature Flags**: Enable/disable caching, validation, normalization
+
+Example configuration:
+
+```yaml
+scraping:
+  base_url: "http://ufcstats.com"
+  timeout: 30
+  max_retries: 3
+  retry_backoff: 2.0
+  delay_between_requests: 1.0
+
+validation:
+  valid_results: ["Win", "Loss", "Draw", "NC", "DQ"]
+  valid_methods: ["KO/TKO", "Submission", "Decision"]
+  min_year: 1993
+  max_year: 2030
+
+output:
+  data_dir: "data"
+  cache_dir: "cache"
+  fight_history_file: "fight_history.csv"
+```
+
+#### Data Validation
+
+The validation layer ensures data quality:
+
+- **Required Fields**: fighter_name, opponent_name, result, event_date
+- **Result Validation**: Must be Win, Loss, Draw, NC, or DQ
+- **Date Validation**: Must be valid date between 1993-2030
+- **Round Validation**: Must be between 1-5
+- **Name Validation**: Filters out N/A, Unknown, TBD
+- **Text Normalization**: Strips whitespace, removes extra spaces
+- **Method Normalization**: Standardizes KO/TKO, Submission, Decision variants
+
+Invalid records are logged and excluded from final output.
+
+#### Testing
+
+Run scraper tests:
+
+```bash
+# Run all scraper tests
+pytest tests/test_fight_scraper.py -v
+
+# Run specific test class
+pytest tests/test_fight_scraper.py::TestFightDataValidator -v
+
+# Run with coverage
+pytest tests/test_fight_scraper.py -v --cov=scraper --cov-report=html
+```
+
+Test coverage includes:
+- Configuration loading and defaults
+- Data validation rules
+- Text normalization and cleaning
+- Cache key generation
+- Date, strike, and time parsing
+- Quality score calculation
+- Batch validation
+
 ## Future Enhancements
 
 ### Planned Features
+- [x] **Automated fight history scraping from multiple sources** ✅ (Implemented)
 - [ ] SHAP value visualizations in dashboard
 - [ ] Real-time UFC Stats API integration
 - [ ] Historical backtest validation
 - [ ] Injury and camp data integration
 - [ ] Fight outcome method prediction (not just winner)
-- [ ] Automated fight history scraping from multiple sources
+- [ ] Asynchronous scraping with aiohttp for performance
 
 ### Potential Improvements
 - Neural network models (LSTM for fight sequences)
