@@ -1,0 +1,136 @@
+# MMA Fight History Scraper Configuration
+
+# Base URLs for scraping
+scraping:
+  base_url: "http://ufcstats.com"
+  search_url: "http://ufcstats.com/statistics/fighters/search"
+  fighter_details_url: "http://ufcstats.com/fighter-details/"
+  
+  # Request settings
+  timeout: 30
+  max_retries: 3
+  retry_backoff: 2.0
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  
+  # Rate limiting
+  delay_between_requests: 1.0  # seconds
+  delay_between_fighters: 2.0  # seconds
+
+# CSS Selectors for parsing UFC Stats pages
+selectors:
+  # Fighter search page
+  search_results: "tbody.b-statistics__table-body tr"
+  fighter_name: "td.b-statistics__table-col a"
+  fighter_link: "td.b-statistics__table-col a"
+  
+  # Fighter details page
+  fight_history_table: "tbody.b-fight-details__table-body"
+  fight_rows: "tr.b-fight-details__table-row"
+  
+  # Fight details
+  fight_result: "td.b-fight-details__table-col:nth-child(1) i"
+  opponent_name: "td.b-fight-details__table-col:nth-child(2) a"
+  result_method: "td.b-fight-details__table-col:nth-child(7)"
+  round_number: "td.b-fight-details__table-col:nth-child(8)"
+  fight_time: "td.b-fight-details__table-col:nth-child(9)"
+  event_name: "td.b-fight-details__table-col:nth-child(3) a"
+  event_date: "td.b-fight-details__table-col:nth-child(3) span"
+  
+  # Detailed stats (if available)
+  sig_strikes: "td.b-fight-details__table-col:nth-child(4)"
+  total_strikes: "td.b-fight-details__table-col:nth-child(5)"
+  takedowns: "td.b-fight-details__table-col:nth-child(6)"
+
+# Alternative selectors (fallback if primary fails)
+alternative_selectors:
+  tapology:
+    base_url: "https://www.tapology.com"
+    search_url: "https://www.tapology.com/search/fighters"
+    fighter_profile: ".fighter-profile"
+    fight_history: ".fightCard"
+
+# Data validation rules
+validation:
+  # Valid result types
+  valid_results:
+    - "Win"
+    - "Loss"
+    - "Draw"
+    - "NC"  # No Contest
+    - "DQ"  # Disqualification
+  
+  # Valid methods
+  valid_methods:
+    - "KO/TKO"
+    - "Submission"
+    - "Decision"
+    - "Unanimous Decision"
+    - "Split Decision"
+    - "Majority Decision"
+    - "TKO - Doctor's Stoppage"
+    - "Other"
+  
+  # Date format
+  date_format: "%Y-%m-%d"
+  min_year: 1993  # UFC started
+  max_year: 2030
+  
+  # Round validation
+  min_round: 1
+  max_round: 5
+  
+  # Fighter name cleaning
+  strip_chars: " \t\n\r"
+  invalid_name_patterns:
+    - "N/A"
+    - "Unknown"
+    - "TBD"
+
+# Output configuration
+output:
+  data_dir: "data"
+  cache_dir: "cache"
+  
+  # Output files
+  fight_history_file: "fight_history.csv"
+  scraping_log_file: "scraping_log.json"
+  failed_fighters_file: "failed_fighters.txt"
+  
+  # CSV columns
+  fight_history_columns:
+    - "fighter_name"
+    - "opponent_name"
+    - "event_date"
+    - "event_name"
+    - "result"
+    - "win_method"
+    - "round_number"
+    - "fight_duration_seconds"
+    - "sig_strikes_landed"
+    - "sig_strikes_received"
+    - "fight_ending_technique"
+    - "total_strikes_landed"
+    - "total_strikes_received"
+    - "takedowns_landed"
+    - "takedowns_attempted"
+    - "data_quality_score"
+    - "scraped_at"
+  
+  # Cache expiration (days)
+  cache_expiration_days: 30
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "scraper.log"
+  console: true
+
+# Feature flags
+features:
+  use_cache: true
+  save_html_cache: true
+  parallel_scraping: false  # Set to true for async scraping
+  max_workers: 3  # For parallel scraping
+  validate_on_scrape: true
+  normalize_text: true
